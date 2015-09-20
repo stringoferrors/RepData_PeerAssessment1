@@ -1,12 +1,16 @@
-Reproducible Research Assignment
+---
+output: html_document
+---
+Reproducible Research: Peer Assessment 1
 ==============================
 
-First download the data
-
 Read the data into R Studio and view the summary of it.
+```{r}
+setwd("C:/Users/u6027576/Documents/Coursera/reproducibleResearch/RepData_PeerAssessment1")
+```
+
 
 ```{r}
-setwd("C:/Users/u6027576/Documents/Coursera/reproducibleResearch")
 activity <- read.csv("activity.csv")
 summary(activity)
 ```
@@ -15,38 +19,57 @@ Remove the rows in the data frame where the number of steps is not given (NA) or
 
 What is mean total number of steps taken per day?
 ================================================
+
+!Optional: remove data entries NA from the data set before processing
+
+```{r, echo=FALSE, results='hide'}
+library(ggplot2)
+```
+
+
 ```{r}
 activityNAR <- na.omit(activity)
 ## Sum
 activitySum <- tapply(activity$steps, activity$date, sum)
 df.actSum <- data.frame(date=names(activitySum), sum.steps=activitySum)
-## Create histogram
-library(ggplot2)
+## Create histogram using ggplot
 ggplot(df.actSum,aes(x=sum.steps)) +
     geom_histogram(fill = "red", alpha = 0.4)
+```
 
+```{r, echo=FALSE}
 ## Mean
-activityMeans <- tapply(activity$steps, activity$date, mean)
+activityMeans <- tapply(activity$steps, activity$date, sum)
 activityMin <- tapply(activity$steps, activity$date, min)
 activityMax <- tapply(activity$steps, activity$date, max)
 activityMedian <- tapply(activity$steps, activity$date, median)
 df.actAv <- data.frame(mean.steps=activityMeans, min.steps=activityMin, max.steps=activityMax, median.steps=activityMedian)
-df.actAv
 ```
+
+Calculating the mean steps per day:
+```{r}
+activityMeans <- tapply(activityNAR$steps, activityNAR$date, sum)
+AvStepsPerDay <- mean(activityMeans, na.rm=TRUE)
+AvStepsPerDay
+```
+
+Calculating the median steps per day:
+```{r}
+MedianStepsPerDay <- median(activityMeans, na.rm=TRUE)
+MedianStepsPerDay
+```
+
+The subject took a mean of 10766.19 and a median of 10765 steps per day.
 
 What is the average daily activity pattern?
 ===========================================
 
 ```{r}
-activityNAR <- na.omit(activity)
 TimeSeries <- tapply(activityNAR$steps, activityNAR$interval, mean)
 df.timeSeries <- data.frame(Time=as.numeric(as.character(names(TimeSeries))), mean.steps=TimeSeries)
+
 dtt <- sprintf("%04d", df.timeSeries$Time)
 df.timeSeries$Time2 <- strptime(dtt, format="%H%M")
-
-p <- ggplot() + 
-  geom_line(data = df.timeSeries, aes(x = Time2, y = mean.steps, group=1), color="red") +labs(x = "Time", y = "Mean average of steps", title = "Average steps through the day")
-p
 
 df.timeSeries$IntervalMinutes <- (df.timeSeries$Time %% 100) + (df.timeSeries$Time %/% 100)*60
 
@@ -56,6 +79,13 @@ q
 
 ```
 
+Alternatively: time could be added to axis
+
+```{r}
+p <- ggplot() + 
+  geom_line(data = df.timeSeries, aes(x = Time2, y = mean.steps, group=1), color="red") +labs(x = "Time", y = "Mean average of steps", title = "Average steps through the day")
+p
+```
 
 Which 5-minute interval contains the highest average for steps?
 
@@ -64,13 +94,17 @@ Which 5-minute interval contains the highest average for steps?
 maxStepAv <- max(df.timeSeries$mean.steps)
 maxStepAvIndex <- grep(pattern=maxStepAv, df.timeSeries$mean.steps)
 fiveMInterval <- df.timeSeries$Time[maxStepAvIndex]
-fiveMInterval
-
+df2 <- data.frame(Interval=fiveMInterval, Steps=maxStepAv)
+df2
 ```
+
+The maximum average steps per period occur at interval 835, with an average of 206 steps per 5 minutes.
 
 Imputing missing values
 ================================
 Calculating rows containing NA. False values on complete cases are the rows which contain NA.
+
+False cases represent rows missing step entries.
 
 ```{r}
 
@@ -78,7 +112,7 @@ table(complete.cases(activity))
 
 ```
 
-Filling in the blanks. Add bullet point explanation. All data is filled in now.
+Loop over time intervals where step data is NA and replace the value with the average step value for that interval.
 
 ```{r}
 intervals <- unique(activity$interval)
@@ -94,7 +128,7 @@ for (i in intervals){
 
 ```
 
-Complete cases is run again to show all cases are complete.
+Complete cases is run again to show all cases are complete. No false cases means that all NAs have been replaced with mean data for that interval.
 
 ```{r}
 A <- complete.cases(activity)
@@ -108,20 +142,16 @@ activitySum <- tapply(activity$steps, activity$date, sum)
 df.actSum <- data.frame(date=names(activitySum), sum.steps=activitySum)
 
 ##plot
-library(ggplot2)
 ggplot(df.actSum,aes(x=sum.steps)) +
     geom_histogram(fill = "red", alpha = 0.4)
 
 ## Mean
-activityMeans <- tapply(activity$steps, activity$date, mean)
-activityMin <- tapply(activity$steps, activity$date, min)
-activityMax <- tapply(activity$steps, activity$date, max)
-activityMedian <- tapply(activity$steps, activity$date, median)
-df.actAv <- data.frame(mean.steps=activityMeans, min.steps=activityMin, max.steps=activityMax, median.steps=activityMedian)
-df.actAv
+activityMeans <- tapply(activityNAR$steps, activityNAR$date, sum)
+AvStepsPerDay <- mean(activityMeans, na.rm=TRUE)
+AvStepsPerDay
 ```
 
-Looking at the means and medians, the mean falls near enough the others but it is perhaps an overestimate. The approximate value for median is too high as it is 0 in all other cases.
+After imputing the data with the method, the number of daily steps shows a fractional difference between the mean and median. From these observations, it seems that the impact of imputing missing values on the total number of daily steps is negligible.
 
 Are there differences in activity patterns between weekdays and weekends?
 ========================================================================
